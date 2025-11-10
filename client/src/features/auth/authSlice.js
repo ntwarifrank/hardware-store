@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosClient from '../../api/axiosClient';
+import { getUserFriendlyError } from '../../utils/errorMessages';
 
 // Get user from localStorage
 const user = JSON.parse(localStorage.getItem('user'));
@@ -25,7 +26,8 @@ export const register = createAsyncThunk(
       const { tempUserId, email } = response.data.data;
       return { tempUserId, email };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.error || 'Registration failed');
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Registration failed';
+      return rejectWithValue(getUserFriendlyError(errorMsg));
     }
   }
 );
@@ -41,7 +43,8 @@ export const verifyOTP = createAsyncThunk(
       localStorage.setItem('accessToken', accessToken);
       return { user, accessToken };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.error || 'Verification failed');
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Verification failed';
+      return rejectWithValue(getUserFriendlyError(errorMsg));
     }
   }
 );
@@ -54,7 +57,8 @@ export const resendOTP = createAsyncThunk(
       await axiosClient.post('/auth/resend-otp', { tempUserId });
       return true;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.error || 'Failed to resend OTP');
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to resend OTP';
+      return rejectWithValue(getUserFriendlyError(errorMsg));
     }
   }
 );
@@ -70,8 +74,8 @@ export const login = createAsyncThunk(
       localStorage.setItem('accessToken', accessToken);
       return { user, accessToken };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || 'Login failed';
-      return rejectWithValue(errorMessage);
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Login failed';
+      return rejectWithValue(getUserFriendlyError(errorMsg));
     }
   }
 );
@@ -105,7 +109,8 @@ export const logout = createAsyncThunk(
       localStorage.clear();
       sessionStorage.clear();
       console.error('Logout API failed but local data cleared:', error);
-      return rejectWithValue(error.response?.data?.error || 'Logout failed');
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Logout failed';
+      return rejectWithValue(getUserFriendlyError(errorMsg));
     }
   }
 );
@@ -120,7 +125,8 @@ export const getCurrentUser = createAsyncThunk(
       localStorage.setItem('user', JSON.stringify(user));
       return user;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.error || 'Failed to get user');
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Failed to get user';
+      return rejectWithValue(getUserFriendlyError(errorMsg));
     }
   }
 );

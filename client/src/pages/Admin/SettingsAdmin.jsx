@@ -5,14 +5,16 @@ const SettingsAdmin = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [maintenanceSaving, setMaintenanceSaving] = useState(false);
+  const [maintenanceSaved, setMaintenanceSaved] = useState(false);
   const [settings, setSettings] = useState({
     siteName: 'BuildMart Hardware Store',
     siteDescription: 'Quality hardware and tools for professionals',
     contactEmail: 'ugwanezav@gmail.com',
     contactPhone: '+250 788 123 456',
     address: 'Kigali, Rwanda',
-    currency: 'RWF',
-    currencySymbol: 'FRw',
+    currency: 'USD',
+    currencySymbol: '$',
     taxRate: '18',
     shippingFee: '5000',
     freeShippingThreshold: '50000',
@@ -29,6 +31,38 @@ const SettingsAdmin = () => {
     const { name, value, type, checked } = e.target;
     setSettings(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     setSaved(false);
+  };
+
+  // Real-time save for maintenance mode
+  const handleMaintenanceModeChange = async (e) => {
+    const { checked } = e.target;
+    
+    // Update state immediately
+    setSettings(prev => ({ ...prev, maintenanceMode: checked }));
+    setMaintenanceSaving(true);
+    
+    try {
+      // Save to localStorage
+      const updatedSettings = { ...settings, maintenanceMode: checked };
+      localStorage.setItem('adminSettings', JSON.stringify(updatedSettings));
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Show success indicator
+      setMaintenanceSaving(false);
+      setMaintenanceSaved(true);
+      
+      // Clear success after 2 seconds
+      setTimeout(() => {
+        setMaintenanceSaved(false);
+      }, 2000);
+      
+      console.log('✅ Maintenance mode updated:', checked ? 'ON' : 'OFF');
+    } catch (error) {
+      setMaintenanceSaving(false);
+      console.error('Failed to update maintenance mode:', error);
+    }
   };
 
   const handleSave = async () => {
@@ -113,13 +147,33 @@ const SettingsAdmin = () => {
               </div>
             </div>
             <div className="border-t pt-6">
-              <label className="flex items-center gap-3">
-                <input type="checkbox" name="maintenanceMode" checked={settings.maintenanceMode} onChange={handleChange} />
-                <div>
-                  <span className="font-medium">Maintenance Mode</span>
-                  <p className="text-sm text-gray-500">Put your store in maintenance mode</p>
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <input 
+                    type="checkbox" 
+                    name="maintenanceMode" 
+                    checked={settings.maintenanceMode} 
+                    onChange={handleMaintenanceModeChange}
+                    className="mt-1 w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900 dark:text-white">Maintenance Mode</span>
+                      {maintenanceSaving && (
+                        <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                          <span className="animate-spin">⏳</span> Saving...
+                        </span>
+                      )}
+                      {maintenanceSaved && (
+                        <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                          <CheckCircle size={14} /> Saved!
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Put your store in maintenance mode</p>
+                  </div>
                 </div>
-              </label>
+              </div>
             </div>
           </>
         )}
@@ -144,8 +198,8 @@ const SettingsAdmin = () => {
               <div>
                 <label className="block text-sm font-medium mb-2">Currency</label>
                 <select name="currency" value={settings.currency} onChange={handleChange} className="input">
-                  <option value="RWF">Rwandan Franc (RWF)</option>
                   <option value="USD">US Dollar (USD)</option>
+                  <option value="RWF">Rwandan Franc (RWF)</option>
                   <option value="EUR">Euro (EUR)</option>
                 </select>
               </div>

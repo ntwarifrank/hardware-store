@@ -68,7 +68,7 @@ const FAQ = () => {
       faqs: [
         {
           question: 'What are your delivery charges?',
-          answer: 'Standard Delivery: 5,000 RWF (3-5 business days). Express Delivery: 10,000 RWF (1-2 business days). Same-Day Delivery: 15,000 RWF (Kigali only, order before 12 PM). Free standard delivery on orders over 200,000 RWF.'
+          answer: 'Standard Delivery: $50 (3-5 business days). Express Delivery: $100 (1-2 business days). Same-Day Delivery: $150 (Kigali only, order before 12 PM). Free standard delivery on orders over $2,000.'
         },
         {
           question: 'Do you deliver nationwide?',

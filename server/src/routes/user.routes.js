@@ -8,6 +8,8 @@ import {
   addAddress,
   updateAddress,
   deleteAddress,
+  updateNotificationPreferences,
+  getNotificationPreferences,
   deleteAccount,
 } from '../controllers/user.controller.js';
 import { protect } from '../middleware/authMiddleware.js';
@@ -31,6 +33,8 @@ router.get('/addresses', protect, getAddresses);
 router.post('/addresses', protect, addressValidation, validate, addAddress);
 router.put('/addresses/:id', protect, updateAddress);
 router.delete('/addresses/:id', protect, deleteAddress);
+router.get('/notifications', protect, getNotificationPreferences);
+router.put('/notifications', protect, updateNotificationPreferences);
 router.delete('/account', protect, deleteAccount);
 
 export default router;

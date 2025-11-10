@@ -215,9 +215,9 @@ const Home = () => {
         </div>
 
         {/* Animated Shapes */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-primary-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-primary-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
+        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-orange-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
         
         {/* Floating Icons */}
         <div className="absolute top-1/4 left-1/4 animate-float">
@@ -247,9 +247,9 @@ const Home = () => {
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xl md:text-2xl mb-10 text-primary-100 max-w-3xl mx-auto animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+            <p className="text-xl md:text-2xl mb-10 text-orange-100 max-w-3xl mx-auto animate-fade-in-up" style={{animationDelay: '0.2s'}}>
               Rwanda's #1 Hardware Store - Kigali & Nationwide Delivery<br />
-              <span className="text-yellow-400 font-semibold">Pay with MTN/Airtel Money • Real-Time Confirmation</span>
+              <span className="text-yellow-300 font-bold">Pay with MTN/Airtel Money • Real-Time Confirmation</span>
             </p>
 
             {/* Search Bar */}
@@ -276,16 +276,16 @@ const Home = () => {
             <div className="flex flex-wrap justify-center gap-4 animate-fade-in-up" style={{animationDelay: '0.6s'}}>
               <Link 
                 to="/products" 
-                className="inline-flex items-center gap-2 bg-white text-primary-700 hover:bg-gray-100 font-bold text-lg px-8 py-4 rounded-full shadow-2xl transition-all transform hover:scale-105"
+                className="inline-flex items-center gap-2 bg-white text-orange-600 hover:bg-yellow-50 font-bold text-lg px-10 py-4 rounded-full shadow-2xl transition-all transform hover:scale-105 hover:shadow-orange-500/50"
               >
                 Shop Now
-                <ArrowRight size={20} />
+                <ArrowRight size={24} />
               </Link>
               <Link 
                 to="/products?category=featured" 
-                className="inline-flex items-center gap-2 bg-primary-500/20 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white/20 font-semibold text-lg px-8 py-4 rounded-full transition-all"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-white border-2 border-white/50 hover:border-white font-bold text-lg px-10 py-4 rounded-full shadow-xl transition-all transform hover:scale-105"
               >
-                <Star size={20} />
+                <Star size={24} fill="currentColor" />
                 Featured Deals
               </Link>
             </div>
@@ -318,45 +318,53 @@ const Home = () => {
       </section>
 
       {/* Features */}
-      <section className="py-16 bg-white dark:bg-gray-900">
+      <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Why Customers Love Us
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400">
+              Everything you need for your next project
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 animate-fade-in-up">
-            <div className="group text-center p-6 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 cursor-pointer hover:shadow-xl">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl mb-4 group-hover:scale-110 transition-transform shadow-lg">
-                <Package className="text-white" size={36} />
+            <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-orange-50 to-white dark:from-gray-800 dark:to-gray-800 border-2 border-transparent hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-300 cursor-pointer hover:shadow-2xl hover:-translate-y-1">
+              <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-3xl mb-6 group-hover:scale-110 transition-transform shadow-xl group-hover:shadow-orange-500/50">
+                <Package className="text-white" size={42} strokeWidth={2} />
               </div>
-              <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">Quality Products</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <h3 className="font-bold text-xl mb-3 text-gray-900 dark:text-white">Quality Products</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Premium hardware from trusted brands worldwide
               </p>
             </div>
 
-            <div className="group text-center p-6 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 cursor-pointer hover:shadow-xl">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl mb-4 group-hover:scale-110 transition-transform shadow-lg">
-                <Truck className="text-white" size={36} />
+            <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-orange-50 to-white dark:from-gray-800 dark:to-gray-800 border-2 border-transparent hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-300 cursor-pointer hover:shadow-2xl hover:-translate-y-1">
+              <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-3xl mb-6 group-hover:scale-110 transition-transform shadow-xl group-hover:shadow-orange-500/50">
+                <Truck className="text-white" size={42} strokeWidth={2} />
               </div>
-              <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">Fast Delivery</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <h3 className="font-bold text-xl mb-3 text-gray-900 dark:text-white">Fast Delivery</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Same-day delivery in Kigali • 1-3 days nationwide
               </p>
             </div>
 
-            <div className="group text-center p-6 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 cursor-pointer hover:shadow-xl">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl mb-4 group-hover:scale-110 transition-transform shadow-lg">
-                <Shield className="text-white" size={36} />
+            <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-yellow-50 to-white dark:from-gray-800 dark:to-gray-800 border-2 border-transparent hover:border-yellow-300 dark:hover:border-yellow-600 transition-all duration-300 cursor-pointer hover:shadow-2xl hover:-translate-y-1">
+              <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 rounded-3xl mb-6 group-hover:scale-110 transition-transform shadow-xl group-hover:shadow-yellow-500/50">
+                <Shield className="text-white" size={42} strokeWidth={2} />
               </div>
-              <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">Mobile Money Payment</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Pay with MTN/Airtel Money • Instant confirmation
+              <h3 className="font-bold text-xl mb-3 text-gray-900 dark:text-white">Mobile Money</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                MTN/Airtel Money • Instant real-time confirmation
               </p>
             </div>
 
-            <div className="group text-center p-6 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 cursor-pointer hover:shadow-xl">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl mb-4 group-hover:scale-110 transition-transform shadow-lg">
-                <Headphones className="text-white" size={36} />
+            <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-orange-50 to-white dark:from-gray-800 dark:to-gray-800 border-2 border-transparent hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-300 cursor-pointer hover:shadow-2xl hover:-translate-y-1">
+              <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-orange-400 via-orange-500 to-red-500 rounded-3xl mb-6 group-hover:scale-110 transition-transform shadow-xl group-hover:shadow-orange-500/50">
+                <Headphones className="text-white" size={42} strokeWidth={2} />
               </div>
-              <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">24/7 Support</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <h3 className="font-bold text-xl mb-3 text-gray-900 dark:text-white">24/7 Support</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Expert support team always ready to help
               </p>
             </div>
@@ -407,7 +415,7 @@ const Home = () => {
             </div>
 
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 text-center hover:bg-white/20 transition-all">
-              <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle size={40} className="text-white" />
               </div>
               <h3 className="text-xl font-bold mb-3">Real-Time Confirmation</h3>
@@ -492,8 +500,8 @@ const Home = () => {
                 to={`/products?category=${category._id}`}
                 className="group relative overflow-hidden rounded-2xl bg-white dark:bg-gray-700 shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
               >
-                <div className="aspect-square bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 p-6 flex items-center justify-center">
-                  <div className="text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform">
+                <div className="aspect-square bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 p-6 flex items-center justify-center group-hover:from-orange-100 group-hover:to-orange-200 dark:group-hover:from-orange-800/30 dark:group-hover:to-orange-700/30 transition-all">
+                  <div className="text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform">
                     {index === 0 && <Wrench size={48} strokeWidth={1.5} />}
                     {index === 1 && <Hammer size={48} strokeWidth={1.5} />}
                     {index === 2 && <Zap size={48} strokeWidth={1.5} />}
@@ -503,13 +511,13 @@ const Home = () => {
                   </div>
                 </div>
                 <div className="p-4 text-center">
-                  <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                  <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                     {category.name}
                   </h3>
                   {category.description && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
                       {category.description}
-                    </p>
+                    </span>
                   )}
                 </div>
               </Link>
@@ -519,7 +527,7 @@ const Home = () => {
           <div className="text-center mt-10">
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold text-lg"
+              className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-lg px-8 py-3 rounded-full shadow-lg transition-all transform hover:scale-105"
             >
               View All Categories
               <ArrowRight size={20} />
@@ -532,9 +540,9 @@ const Home = () => {
       <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full mb-4">
-              <Star size={20} className="text-yellow-600 dark:text-yellow-400" fill="currentColor" />
-              <span className="text-sm font-semibold text-yellow-800 dark:text-yellow-400">Top Rated Products</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">
+              <Star size={20} className="text-orange-600 dark:text-orange-400" fill="currentColor" />
+              <span className="text-sm font-semibold text-orange-700 dark:text-orange-400">Top Rated Products</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               Featured Products
@@ -558,7 +566,7 @@ const Home = () => {
               <div className="text-center mt-12">
                 <Link
                   to="/products"
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold text-lg px-10 py-4 rounded-full shadow-xl transition-all transform hover:scale-105"
+                  className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-lg px-10 py-4 rounded-full shadow-xl transition-all transform hover:scale-105"
                 >
                   View All Products
                   <ArrowRight size={20} />
@@ -571,7 +579,7 @@ const Home = () => {
               <p className="text-gray-600 dark:text-gray-400 text-lg">No featured products available yet</p>
               <Link
                 to="/products"
-                className="inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 font-semibold mt-4"
+                className="inline-flex items-center gap-2 text-orange-600 dark:text-orange-400 hover:text-orange-700 font-semibold mt-4"
               >
                 Browse All Products
                 <ArrowRight size={20} />
@@ -613,9 +621,9 @@ const Home = () => {
       <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/30 rounded-full mb-4">
-              <ThumbsUp size={20} className="text-primary-600 dark:text-primary-400" />
-              <span className="text-sm font-semibold text-primary-700 dark:text-primary-400">Customer Reviews</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">
+              <ThumbsUp size={20} className="text-orange-600 dark:text-orange-400" />
+              <span className="text-sm font-semibold text-orange-700 dark:text-orange-400">Customer Reviews</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               What Our Customers Say
@@ -669,15 +677,15 @@ const Home = () => {
           <div className="mt-16 pt-12 border-t border-gray-200 dark:border-gray-700">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               <div className="flex flex-col items-center">
-                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-3">
-                  <BadgeCheck size={32} className="text-green-600 dark:text-green-400" />
+                <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mb-3">
+                  <CheckCircle size={32} className="text-orange-500" strokeWidth={2.5} />
                 </div>
                 <h4 className="font-bold text-gray-900 dark:text-white">Verified Reviews</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">100% Authentic</p>
               </div>
               <div className="flex flex-col items-center">
                 <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mb-3">
-                  <Star size={32} className="text-yellow-500" fill="currentColor" />
+                  <Star size={32} className="text-yellow-400" fill="currentColor" strokeWidth={0} />
                 </div>
                 <h4 className="font-bold text-gray-900 dark:text-white">4.9/5 Rating</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">From 2,500+ Reviews</p>
@@ -705,9 +713,9 @@ const Home = () => {
       <section className="py-20 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/30 rounded-full mb-4">
-              <Sparkles size={20} className="text-primary-600 dark:text-primary-400" />
-              <span className="text-sm font-semibold text-primary-700 dark:text-primary-400">Simple Process</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">
+              <Sparkles size={20} className="text-orange-600 dark:text-orange-400" />
+              <span className="text-sm font-semibold text-orange-700 dark:text-orange-400">Simple Process</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               How It Works
@@ -738,7 +746,7 @@ const Home = () => {
             <div className="relative text-center group">
               <div className="mb-6 inline-block">
                 <div className="relative">
-                  <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-700 rounded-full flex items-center justify-center mx-auto shadow-xl group-hover:scale-110 transition-transform">
+                  <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-700 rounded-full flex items-center justify-center mx-auto shadow-xl group-hover:scale-110 transition-transform">
                     <ShoppingBag size={32} className="text-white" strokeWidth={2.5} />
                   </div>
                   <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center font-bold text-gray-900 shadow-lg">
@@ -793,9 +801,9 @@ const Home = () => {
       <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/30 rounded-full mb-4">
-              <BadgeCheck size={20} className="text-primary-600 dark:text-primary-400" />
-              <span className="text-sm font-semibold text-primary-700 dark:text-primary-400">Why Choose BuildMart</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">
+              <BadgeCheck size={20} className="text-orange-600 dark:text-orange-400" />
+              <span className="text-sm font-semibold text-orange-700 dark:text-orange-400">Why Choose BuildMart</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               Your Trusted Hardware Partner
@@ -823,8 +831,8 @@ const Home = () => {
             <div className="grid gap-4">
               <div className="flex gap-4 p-6 bg-gray-50 dark:bg-gray-800 rounded-xl hover:shadow-lg transition-all hover-lift">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                    <CheckCircle size={24} className="text-green-600 dark:text-green-400" />
+                  <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                    <CheckCircle size={24} className="text-orange-600 dark:text-orange-400" />
                   </div>
                 </div>
                 <div>
@@ -859,8 +867,8 @@ const Home = () => {
 
               <div className="flex gap-4 p-6 bg-gray-50 dark:bg-gray-800 rounded-xl hover:shadow-lg transition-all hover-lift">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                    <Users size={24} className="text-green-600 dark:text-green-400" />
+                  <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                    <Users size={24} className="text-orange-600 dark:text-orange-400" />
                   </div>
                 </div>
                 <div>
@@ -872,7 +880,7 @@ const Home = () => {
           </div>
 
           {/* Money-Back Guarantee Banner */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-green-500 to-green-600 p-8 text-white shadow-2xl">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 p-8 text-white shadow-2xl">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="text-center md:text-left">
@@ -880,13 +888,13 @@ const Home = () => {
                   <Shield size={32} className="text-white" />
                   <h3 className="text-2xl font-bold">30-Day Money-Back Guarantee</h3>
                 </div>
-                <p className="text-green-50 text-lg">
+                <p className="text-orange-50 text-lg">
                   Not satisfied? Return any item within 30 days for a full refund. No questions asked.
                 </p>
               </div>
               <Link
                 to="/products"
-                className="bg-white text-green-600 hover:bg-green-50 font-bold px-8 py-3 rounded-full shadow-xl transition-all whitespace-nowrap flex items-center gap-2"
+                className="bg-white text-orange-600 hover:bg-orange-50 font-bold px-8 py-3 rounded-full shadow-xl transition-all whitespace-nowrap flex items-center gap-2"
               >
                 Shop Risk-Free
                 <ArrowRight size={20} />
@@ -900,9 +908,9 @@ const Home = () => {
       <section className="py-20 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/30 rounded-full mb-4">
-              <Headphones size={20} className="text-primary-600 dark:text-primary-400" />
-              <span className="text-sm font-semibold text-primary-700 dark:text-primary-400">Got Questions?</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">
+              <Headphones size={20} className="text-orange-600 dark:text-orange-400" />
+              <span className="text-sm font-semibold text-orange-700 dark:text-orange-400">Got Questions?</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               Frequently Asked Questions
@@ -916,7 +924,7 @@ const Home = () => {
             {[
               {
                 q: "Where do you deliver in Rwanda?",
-                a: "We deliver across all Rwanda! Same-day delivery in Kigali (order before 2 PM), 1-2 days to major cities (Huye, Musanze, Gisenyi), and 2-3 days nationwide. Free delivery on orders over 50,000 RWF in Kigali."
+                a: "We deliver across all Rwanda! Same-day delivery in Kigali (order before 2 PM), 1-2 days to major cities (Huye, Musanze, Gisenyi), and 2-3 days nationwide. Free delivery on orders over $500 in Kigali."
               },
               {
                 q: "What payment methods do you accept?",
@@ -942,7 +950,7 @@ const Home = () => {
               <details key={index} className="group bg-white dark:bg-gray-900 rounded-xl shadow-md hover:shadow-lg transition-all">
                 <summary className="flex items-center justify-between cursor-pointer p-6 font-semibold text-gray-900 dark:text-white text-lg">
                   <span>{faq.q}</span>
-                  <ChevronRight size={20} className="transform group-open:rotate-90 transition-transform text-primary-600 dark:text-primary-400" />
+                  <ChevronRight size={20} className="transform group-open:rotate-90 transition-transform text-orange-500 dark:text-orange-400" />
                 </summary>
                 <div className="px-6 pb-6 text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800 pt-4">
                   {faq.a}
@@ -955,10 +963,10 @@ const Home = () => {
             <p className="text-gray-600 dark:text-gray-400 mb-4">Still have questions?</p>
             <Link
               to="/contact"
-              className="inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 font-semibold"
+              className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-full shadow-lg transition-all transform hover:scale-105"
             >
               <Headphones size={20} />
-              Contact our support team
+              Contact Support
               <ArrowRight size={16} />
             </Link>
           </div>
@@ -1029,7 +1037,7 @@ const Home = () => {
                 </button>
               </div>
               {newsletterStatus === 'success' && (
-                <p className="mt-4 text-green-300 font-semibold flex items-center justify-center gap-2">
+                <p className="mt-4 text-orange-200 font-semibold flex items-center justify-center gap-2">
                   <CheckCircle size={20} />
                   Successfully subscribed! Thank you.
                 </p>
@@ -1078,15 +1086,15 @@ const Home = () => {
             {/* Trust Badges */}
             <div className="flex flex-wrap justify-center items-center gap-8 mt-12 text-white/80">
               <div className="flex items-center gap-2">
-                <CheckCircle size={20} className="text-green-400" />
+                <CheckCircle size={20} className="text-orange-400" />
                 <span>Secure Checkout</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle size={20} className="text-green-400" />
+                <CheckCircle size={20} className="text-orange-400" />
                 <span>Free Shipping on Orders $100+</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle size={20} className="text-green-400" />
+                <CheckCircle size={20} className="text-orange-400" />
                 <span>30-Day Returns</span>
               </div>
             </div>

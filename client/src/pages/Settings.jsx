@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { User, Mail, Phone, MapPin, Lock, Bell, Moon, Sun, Globe, Save, CreditCard, Truck, Shield, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Lock, Bell, Moon, Sun, Globe, Save, CreditCard, Truck, Shield, AlertTriangle, Eye, EyeOff, Check } from 'lucide-react';
 import axiosClient from '../api/axiosClient';
 import { useNavigate } from 'react-router-dom';
 
@@ -29,16 +29,14 @@ const Settings = () => {
     confirmPassword: ''
   });
 
-  // Notification Settings - Load from localStorage if available
-  const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem('notificationPreferences');
-    return saved ? JSON.parse(saved) : {
-      emailNotifications: true,
-      orderUpdates: true,
-      promotions: false,
-      newsletter: false
-    };
+  // Notification Settings
+  const [notifications, setNotifications] = useState({
+    emailNotifications: true,
+    orderUpdates: true,
+    promotions: false,
+    newsletter: false
   });
+  const [notificationStatus, setNotificationStatus] = useState({});
 
   // Privacy Settings
   const [profileVisibility, setProfileVisibility] = useState(() => {
@@ -47,6 +45,25 @@ const Settings = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
+
+  // Load notification preferences from backend
+  useEffect(() => {
+    const loadNotificationPreferences = async () => {
+      try {
+        const response = await axiosClient.get('/users/notifications');
+        if (response.data.success) {
+          setNotifications(response.data.data.notificationPreferences);
+        }
+      } catch (error) {
+        // If error, use default values already set
+        console.error('Failed to load notification preferences:', error);
+      }
+    };
+
+    if (user) {
+      loadNotificationPreferences();
+    }
+  }, [user]);
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
@@ -94,17 +111,41 @@ const Settings = () => {
     }
   };
 
-  const handleNotificationsSave = () => {
-    setSaving(true);
-    setMessage({ type: '', text: '' });
-
-    // Save to localStorage
-    localStorage.setItem('notificationPreferences', JSON.stringify(notifications));
+  // Real-time notification preference update
+  const handleNotificationToggle = async (key, value) => {
+    // Store the old value for reverting on error
+    const oldValue = notifications[key];
     
-    setTimeout(() => {
-      setSaving(false);
-      setMessage({ type: 'success', text: 'Notification preferences saved!' });
-    }, 1000);
+    // Update UI immediately for responsive feel
+    setNotifications(prev => ({ ...prev, [key]: value }));
+    
+    // Show saving status
+    setNotificationStatus(prev => ({ ...prev, [key]: 'saving' }));
+
+    try {
+      // Save to backend
+      await axiosClient.put('/users/notifications', { [key]: value });
+      
+      // Show success indicator briefly
+      setNotificationStatus(prev => ({ ...prev, [key]: 'saved' }));
+      
+      // Clear status after 2 seconds
+      setTimeout(() => {
+        setNotificationStatus(prev => ({ ...prev, [key]: '' }));
+      }, 2000);
+    } catch (error) {
+      // Revert on error
+      setNotifications(prev => ({ ...prev, [key]: oldValue }));
+      setNotificationStatus(prev => ({ ...prev, [key]: 'error' }));
+      setMessage({ 
+        type: 'error', 
+        text: error.response?.data?.message || 'Failed to update notification preference' 
+      });
+      setTimeout(() => {
+        setNotificationStatus(prev => ({ ...prev, [key]: '' }));
+        setMessage({ type: '', text: '' });
+      }, 3000);
+    }
   };
 
   const toggleDarkMode = () => {
@@ -447,76 +488,114 @@ const Settings = () => {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                       <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Email Notifications</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                          Email Notifications
+                          {notificationStatus.emailNotifications === 'saved' && (
+                            <span className="text-green-500 text-xs flex items-center gap-1">
+                              <Check size={14} /> Saved
+                            </span>
+                          )}
+                          {notificationStatus.emailNotifications === 'saving' && (
+                            <span className="text-gray-500 text-xs">Saving...</span>
+                          )}
+                        </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Receive notifications via email</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
                           checked={notifications.emailNotifications}
-                          onChange={(e) => setNotifications({ ...notifications, emailNotifications: e.target.checked })}
+                          onChange={(e) => handleNotificationToggle('emailNotifications', e.target.checked)}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-500"></div>
+                        <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500"></div>
                       </label>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                       <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Order Updates</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                          Order Updates
+                          {notificationStatus.orderUpdates === 'saved' && (
+                            <span className="text-green-500 text-xs flex items-center gap-1">
+                              <Check size={14} /> Saved
+                            </span>
+                          )}
+                          {notificationStatus.orderUpdates === 'saving' && (
+                            <span className="text-gray-500 text-xs">Saving...</span>
+                          )}
+                        </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Get notified about order status changes</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
                           checked={notifications.orderUpdates}
-                          onChange={(e) => setNotifications({ ...notifications, orderUpdates: e.target.checked })}
+                          onChange={(e) => handleNotificationToggle('orderUpdates', e.target.checked)}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-500"></div>
+                        <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500"></div>
                       </label>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                       <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Promotions</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                          Promotions
+                          {notificationStatus.promotions === 'saved' && (
+                            <span className="text-green-500 text-xs flex items-center gap-1">
+                              <Check size={14} /> Saved
+                            </span>
+                          )}
+                          {notificationStatus.promotions === 'saving' && (
+                            <span className="text-gray-500 text-xs">Saving...</span>
+                          )}
+                        </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Receive promotional offers and deals</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
                           checked={notifications.promotions}
-                          onChange={(e) => setNotifications({ ...notifications, promotions: e.target.checked })}
+                          onChange={(e) => handleNotificationToggle('promotions', e.target.checked)}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-500"></div>
+                        <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500"></div>
                       </label>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                       <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Newsletter</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                          Newsletter
+                          {notificationStatus.newsletter === 'saved' && (
+                            <span className="text-green-500 text-xs flex items-center gap-1">
+                              <Check size={14} /> Saved
+                            </span>
+                          )}
+                          {notificationStatus.newsletter === 'saving' && (
+                            <span className="text-gray-500 text-xs">Saving...</span>
+                          )}
+                        </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Subscribe to our weekly newsletter</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
                           checked={notifications.newsletter}
-                          onChange={(e) => setNotifications({ ...notifications, newsletter: e.target.checked })}
+                          onChange={(e) => handleNotificationToggle('newsletter', e.target.checked)}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-500"></div>
+                        <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500"></div>
                       </label>
                     </div>
 
-                    <button
-                      onClick={handleNotificationsSave}
-                      disabled={saving}
-                      className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:bg-gray-400 text-white py-3 px-6 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
-                    >
-                      <Save size={20} />
-                      {saving ? 'Saving...' : 'Save Preferences'}
-                    </button>
+                    <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <p className="text-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                        <Bell size={16} />
+                        Changes are saved automatically
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -547,7 +626,7 @@ const Settings = () => {
                         Currency & Region
                       </h3>
                       <p className="text-sm text-blue-700 dark:text-blue-400">
-                        Currency: RWF (Rwandan Franc) | Region: Rwanda
+                        Currency: USD ($) | Region: Rwanda
                       </p>
                     </div>
                   </div>

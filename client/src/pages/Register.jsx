@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { register, verifyOTP, resendOTP, clearError, resetOTPState } from '../features/auth/authSlice';
 import { useAuth } from '../hooks/useAuth';
-import { User, Mail, Lock, Eye, EyeOff, Shield, AlertCircle } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Shield, AlertCircle, FileText } from 'lucide-react';
 import Loader from '../components/Loader';
 import PasswordStrength from '../components/PasswordStrength';
 import { validateName, validateEmail, validatePassword } from '../utils/validation';
@@ -14,6 +14,7 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
+    acceptedTerms: false,
   });
   const [otp, setOtp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -32,8 +33,12 @@ const Register = () => {
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
+    // Clear error when user starts typing
     if (error) {
-      dispatch(clearError());
+      const timer = setTimeout(() => {
+        dispatch(clearError());
+      }, 5000); // Auto-clear after 5 seconds
+      return () => clearTimeout(timer);
     }
   }, [error, dispatch]);
 
@@ -45,15 +50,22 @@ const Register = () => {
   }, [dispatch]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    const fieldValue = type === 'checkbox' ? checked : value;
+    
+    // Clear error when user starts typing
+    if (error) {
+      dispatch(clearError());
+    }
+    
     setFormData({
       ...formData,
-      [name]: value,
+      [name]: fieldValue,
     });
 
     // Real-time validation
     if (touched[name]) {
-      validateField(name, value);
+      validateField(name, fieldValue);
     }
   };
 
@@ -82,6 +94,12 @@ const Register = () => {
           errors: value === formData.password ? [] : ['Passwords do not match'],
         };
         break;
+      case 'acceptedTerms':
+        result = {
+          isValid: value === true,
+          errors: value === true ? [] : ['You must accept the terms and conditions'],
+        };
+        break;
       default:
         return;
     }
@@ -104,6 +122,7 @@ const Register = () => {
       email: true,
       password: true,
       confirmPassword: true,
+      acceptedTerms: true,
     });
 
     // Validate all fields
@@ -114,12 +133,17 @@ const Register = () => {
       isValid: formData.password === formData.confirmPassword,
       errors: formData.password === formData.confirmPassword ? [] : ['Passwords do not match'],
     };
+    const termsResult = {
+      isValid: formData.acceptedTerms === true,
+      errors: formData.acceptedTerms === true ? [] : ['You must accept the terms and conditions'],
+    };
 
     const errors = {};
     if (!nameResult.isValid) errors.name = nameResult.errors[0];
     if (!emailResult.isValid) errors.email = emailResult.errors[0];
     if (!passwordResult.isValid) errors.password = passwordResult.errors[0];
     if (!confirmResult.isValid) errors.confirmPassword = confirmResult.errors[0];
+    if (!termsResult.isValid) errors.acceptedTerms = termsResult.errors[0];
 
     setFieldErrors(errors);
 
@@ -132,11 +156,15 @@ const Register = () => {
         name: formData.name,
         email: formData.email,
         password: formData.password,
+        acceptedTerms: formData.acceptedTerms,
       };
       
       await dispatch(register(payload)).unwrap();
+      // Registration successful, OTP form will be shown
     } catch (error) {
-      // Error handled by useEffect
+      // Error is stored in Redux and displayed
+      // Don't navigate or refresh on error
+      console.log('Registration failed:', error);
     }
   };
 
@@ -148,10 +176,14 @@ const Register = () => {
     }
 
     try {
-      await dispatch(verifyOTP({ tempUserId, otp })).unwrap();
-      navigate('/');
+      const result = await dispatch(verifyOTP({ tempUserId, otp })).unwrap();
+      // Only navigate on successful verification
+      if (result) {
+        navigate('/');
+      }
     } catch (error) {
-      // Error handled by useEffect
+      // Error is displayed, don't navigate
+      console.log('OTP verification failed:', error);
     }
   };
 
@@ -185,6 +217,33 @@ const Register = () => {
             </div>
 
             <form onSubmit={handleVerifyOTP} className="space-y-6">
+              {/* Error Message for OTP */}
+              {error && (
+                <div className="p-4 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border-l-4 border-red-500 rounded-xl shadow-md animate-shake backdrop-blur-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
+                        <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-red-800 dark:text-red-200 font-medium leading-relaxed">
+                        {error}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => dispatch(clearError())}
+                      className="flex-shrink-0 text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors"
+                      aria-label="Close error"
+                      type="button"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Verification Code
@@ -239,19 +298,53 @@ const Register = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-primary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
-        <div className="card">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-100 dark:border-gray-700">
+          {/* Logo/Icon Section */}
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-primary-500 rounded-full flex items-center justify-center shadow-lg">
+              <User className="w-8 h-8 text-white" />
+            </div>
+          </div>
+          
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-primary-600 bg-clip-text text-transparent">
               Create Account
             </h2>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
-              Sign up to get started with 2-step verification
+              Join BuildMart - It only takes a minute
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border-l-4 border-red-500 rounded-xl shadow-md animate-shake backdrop-blur-sm">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
+                      <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-red-800 dark:text-red-200 font-medium leading-relaxed">
+                      {error}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => dispatch(clearError())}
+                    className="flex-shrink-0 text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors"
+                    aria-label="Close error"
+                    type="button"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -360,6 +453,54 @@ const Register = () => {
                 <div className="mt-1 flex items-start text-sm text-red-600 dark:text-red-400">
                   <AlertCircle className="w-4 h-4 mr-1 mt-0.5 flex-shrink-0" />
                   <span>{fieldErrors.confirmPassword}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Terms and Conditions */}
+            <div>
+              <div className="flex items-start">
+                <div className="flex items-center h-5">
+                  <input
+                    type="checkbox"
+                    name="acceptedTerms"
+                    checked={formData.acceptedTerms}
+                    onChange={handleChange}
+                    onBlur={() => handleBlur('acceptedTerms')}
+                    className={`w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 ${
+                      fieldErrors.acceptedTerms && touched.acceptedTerms ? 'border-red-500' : ''
+                    }`}
+                    required
+                  />
+                </div>
+                <div className="ml-3 text-sm">
+                  <label htmlFor="acceptedTerms" className="text-gray-700 dark:text-gray-300">
+                    I agree to the{' '}
+                    <Link
+                      to="/terms-conditions"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 hover:underline inline-flex items-center gap-1"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Terms and Conditions
+                    </Link>
+                    {' '}and{' '}
+                    <Link
+                      to="/privacy-policy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 hover:underline"
+                    >
+                      Privacy Policy
+                    </Link>
+                  </label>
+                </div>
+              </div>
+              {fieldErrors.acceptedTerms && touched.acceptedTerms && (
+                <div className="mt-2 flex items-start text-sm text-red-600 dark:text-red-400">
+                  <AlertCircle className="w-4 h-4 mr-1 mt-0.5 flex-shrink-0" />
+                  <span>{fieldErrors.acceptedTerms}</span>
                 </div>
               )}
             </div>

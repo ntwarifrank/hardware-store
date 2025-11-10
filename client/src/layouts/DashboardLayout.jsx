@@ -196,13 +196,13 @@ const DashboardLayout = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-64">
         {/* Top Bar */}
-        <header className="sticky top-0 z-40 bg-[#1e293b] dark:bg-[#0f172a] border-b border-gray-700">
+        <header className="sticky top-0 z-40 bg-white dark:bg-[#1e293b] border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between px-3 sm:px-4 lg:px-6 py-3">
             {/* Mobile Menu + Logo */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden text-white hover:text-gray-300"
+                className="lg:hidden text-gray-700 dark:text-white hover:text-gray-900 dark:hover:text-gray-300"
               >
                 <Menu size={24} />
               </button>
@@ -212,7 +212,7 @@ const DashboardLayout = () => {
                 <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
                   <ShoppingBag className="text-white" size={20} />
                 </div>
-                <span className="text-lg font-bold text-white">
+                <span className="text-lg font-bold text-gray-900 dark:text-white">
                   Hardware Store
                 </span>
               </Link>
@@ -232,7 +232,7 @@ const DashboardLayout = () => {
                   type="text"
                   name="search"
                   placeholder="Search for products, categories..."
-                  className="flex-1 px-4 py-2.5 bg-[#334155] dark:bg-[#1e293b] border-0 rounded-l-full focus:ring-2 focus:ring-orange-500 text-white placeholder-gray-400 text-sm"
+                  className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-[#334155] border border-gray-300 dark:border-gray-600 border-r-0 rounded-l-full focus:ring-2 focus:ring-orange-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
                 />
                 <button
                   type="submit"
@@ -249,7 +249,7 @@ const DashboardLayout = () => {
               {/* Dark Mode Toggle */}
               <button
                 onClick={toggleDarkMode}
-                className="p-2.5 rounded-full bg-gray-700/50 hover:bg-gray-700 transition-colors text-gray-300"
+                className="p-2.5 rounded-full bg-gray-200 dark:bg-gray-700/50 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
               >
                 {darkMode ? <Sun size={20} /> : <Moon size={20} />}
               </button>
@@ -257,7 +257,7 @@ const DashboardLayout = () => {
               {/* Wishlist */}
               <Link
                 to="/wishlist"
-                className="p-2.5 rounded-full bg-gray-700/50 hover:bg-gray-700 transition-colors relative text-gray-300"
+                className="p-2.5 rounded-full bg-gray-200 dark:bg-gray-700/50 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors relative text-gray-700 dark:text-gray-300"
               >
                 <Heart size={20} />
                 {wishlistItems?.length > 0 && (
@@ -270,7 +270,7 @@ const DashboardLayout = () => {
               {/* Cart */}
               <Link
                 to="/cart"
-                className="p-2.5 rounded-full bg-gray-700/50 hover:bg-gray-700 transition-colors relative text-gray-300"
+                className="p-2.5 rounded-full bg-gray-200 dark:bg-gray-700/50 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors relative text-gray-700 dark:text-gray-300"
               >
                 <ShoppingCart size={20} />
                 {totalItems > 0 && (

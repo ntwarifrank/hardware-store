@@ -16,6 +16,7 @@
     "check-discounts": "node src/utils/checkDiscounts.js",
     "fix-indexes": "node src/utils/fixDiscountIndexes.js",
     "remove-admin": "node src/utils/removeAdminRole.js",
+    "fix-products": "node src/utils/fixProductVisibility.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch"
   },

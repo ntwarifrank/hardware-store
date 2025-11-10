@@ -222,6 +222,64 @@ export const deleteAddress = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Update notification preferences
+ * @route   PUT /api/users/notifications
+ * @access  Private
+ */
+export const updateNotificationPreferences = asyncHandler(async (req, res) => {
+  const { emailNotifications, orderUpdates, promotions, newsletter } = req.body;
+
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  // Update notification preferences
+  user.notificationPreferences = {
+    emailNotifications: emailNotifications !== undefined ? emailNotifications : user.notificationPreferences?.emailNotifications ?? true,
+    orderUpdates: orderUpdates !== undefined ? orderUpdates : user.notificationPreferences?.orderUpdates ?? true,
+    promotions: promotions !== undefined ? promotions : user.notificationPreferences?.promotions ?? false,
+    newsletter: newsletter !== undefined ? newsletter : user.notificationPreferences?.newsletter ?? false,
+  };
+
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Notification preferences updated successfully',
+    data: {
+      notificationPreferences: user.notificationPreferences,
+    },
+  });
+});
+
+/**
+ * @desc    Get notification preferences
+ * @route   GET /api/users/notifications
+ * @access  Private
+ */
+export const getNotificationPreferences = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      notificationPreferences: user.notificationPreferences || {
+        emailNotifications: true,
+        orderUpdates: true,
+        promotions: false,
+        newsletter: false,
+      },
+    },
+  });
+});
+
+/**
  * @desc    Delete user account
  * @route   DELETE /api/users/account
  * @access  Private

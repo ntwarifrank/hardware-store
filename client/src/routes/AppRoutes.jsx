@@ -92,7 +92,9 @@ const AppRoutes = () => {
         
         {/* Information Pages */}
         <Route path="privacy" element={<PrivacyPolicy />} />
+        <Route path="privacy-policy" element={<PrivacyPolicy />} />
         <Route path="terms" element={<TermsConditions />} />
+        <Route path="terms-conditions" element={<TermsConditions />} />
         <Route path="cookies" element={<CookiePolicy />} />
         <Route path="shipping" element={<ShippingDelivery />} />
         <Route path="returns" element={<ReturnsRefunds />} />

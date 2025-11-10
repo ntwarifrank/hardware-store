@@ -2,6 +2,7 @@ import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import paymentConfig from '../config/payment.config.js';
 import logger from '../utils/logger.js';
+import crypto from 'crypto';
 
 /**
  * MTN Mobile Money Payment Service
@@ -16,12 +17,12 @@ class MTNMomoService {
   }
 
   /**
-   * Get access token for MTN MoMo API
+   * Get access token for MTN MoMo API with retry logic
    */
-  async getAccessToken() {
+  async getAccessToken(retryCount = 0) {
     try {
-      // Check if token is still valid
-      if (this.token && this.tokenExpiry && Date.now() < this.tokenExpiry) {
+      // Check if token is still valid (with 5 min buffer)
+      if (this.token && this.tokenExpiry && Date.now() < (this.tokenExpiry - 300000)) {
         return this.token;
       }
 
@@ -37,30 +38,61 @@ class MTNMomoService {
             Authorization: `Basic ${auth}`,
             'Ocp-Apim-Subscription-Key': this.config.subscriptionKey,
           },
+          timeout: 30000, // 30 second timeout
         }
       );
 
       this.token = response.data.access_token;
-      this.tokenExpiry = Date.now() + 3600000; // Token valid for 1 hour
+      this.tokenExpiry = Date.now() + (response.data.expires_in * 1000 || 3600000);
 
-      logger.info('MTN MoMo access token obtained');
+      logger.info('MTN MoMo access token obtained successfully');
       return this.token;
     } catch (error) {
-      logger.error('Failed to get MTN MoMo access token:', error.response?.data || error.message);
-      throw new Error('Failed to authenticate with MTN MoMo');
+      logger.error('Failed to get MTN MoMo access token:', {
+        error: error.response?.data || error.message,
+        attempt: retryCount + 1
+      });
+      
+      // Retry up to 3 times with exponential backoff
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000;
+        logger.info(`Retrying token request in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.getAccessToken(retryCount + 1);
+      }
+      
+      throw new Error('Failed to authenticate with MTN MoMo after multiple attempts');
     }
   }
 
   /**
-   * Request payment from customer
+   * Validate phone number format
+   */
+  validatePhoneNumber(phone) {
+    const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+    const rwandaPattern = /^(\+?250|0)?7[238]\d{7}$/;
+    return rwandaPattern.test(cleaned);
+  }
+
+  /**
+   * Request payment from customer with validation and retry
    * @param {Object} paymentData - Payment request data
    * @returns {Promise<Object>} Payment response
    */
-  async requestPayment(paymentData) {
+  async requestPayment(paymentData, retryCount = 0) {
     try {
       const { amount, phoneNumber, orderId, customerName, customerEmail } = paymentData;
 
-      // Format phone number (remove spaces, ensure Rwanda format)
+      // Validate inputs
+      if (!amount || amount <= 0) {
+        throw new Error('Invalid payment amount');
+      }
+
+      if (!this.validatePhoneNumber(phoneNumber)) {
+        throw new Error('Invalid Rwanda phone number format. Use format: 078XXXXXXX or 073XXXXXXX or 072XXXXXXX');
+      }
+
+      // Format phone number
       const formattedPhone = this.formatPhoneNumber(phoneNumber);
 
       const token = await this.getAccessToken();
@@ -81,7 +113,8 @@ class MTNMomoService {
       logger.info(`Requesting MTN MoMo payment: ${referenceId}`, {
         orderId,
         amount,
-        phone: formattedPhone,
+        phone: this.maskPhoneNumber(formattedPhone),
+        attempt: retryCount + 1
       });
 
       const response = await axios.post(
@@ -95,24 +128,47 @@ class MTNMomoService {
             'Ocp-Apim-Subscription-Key': this.config.subscriptionKey,
             'Content-Type': 'application/json',
           },
+          timeout: 30000,
         }
       );
 
-      logger.info(`MTN MoMo payment request sent: ${referenceId}`);
+      logger.info(`MTN MoMo payment request sent successfully: ${referenceId}`);
 
       return {
         success: true,
         referenceId,
         status: 'PENDING',
-        message: 'Payment request sent to customer phone',
+        message: 'Payment request sent to customer phone. Please check your phone and authorize the payment.',
+        expiresAt: Date.now() + 180000, // 3 minutes
       };
     } catch (error) {
-      logger.error('MTN MoMo payment request failed:', error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || error.message;
+      logger.error('MTN MoMo payment request failed:', {
+        error: errorMessage,
+        orderId: paymentData.orderId,
+        attempt: retryCount + 1,
+        statusCode: error.response?.status
+      });
+      
+      // Retry on network errors or 5xx errors
+      const shouldRetry = (
+        (!error.response || error.response.status >= 500) && 
+        retryCount < 2 &&
+        !error.message.includes('Invalid')
+      );
+      
+      if (shouldRetry) {
+        const delay = Math.pow(2, retryCount) * 1000;
+        logger.info(`Retrying payment request in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.requestPayment(paymentData, retryCount + 1);
+      }
       
       return {
         success: false,
-        error: error.response?.data?.message || 'Payment request failed',
+        error: errorMessage,
         status: 'FAILED',
+        errorCode: error.response?.status
       };
     }
   }
@@ -206,6 +262,14 @@ class MTNMomoService {
   }
 
   /**
+   * Mask phone number for logging (security)
+   */
+  maskPhoneNumber(phone) {
+    if (!phone || phone.length < 8) return '***';
+    return phone.substring(0, 6) + 'XXX' + phone.substring(phone.length - 2);
+  }
+
+  /**
    * Format phone number to MTN MoMo format
    * @param {string} phone - Phone number
    * @returns {string} Formatted phone number
@@ -232,6 +296,17 @@ class MTNMomoService {
   }
 
   /**
+   * Verify payment signature (webhook security)
+   */
+  verifyWebhookSignature(payload, signature) {
+    const hash = crypto
+      .createHmac('sha256', this.config.apiKey)
+      .update(JSON.stringify(payload))
+      .digest('hex');
+    return hash === signature;
+  }
+
+  /**
    * Get account balance (for testing/admin)
    */
   async getAccountBalance() {
@@ -246,6 +321,7 @@ class MTNMomoService {
             'X-Target-Environment': this.config.environment,
             'Ocp-Apim-Subscription-Key': this.config.subscriptionKey,
           },
+          timeout: 15000,
         }
       );
 
@@ -253,6 +329,33 @@ class MTNMomoService {
     } catch (error) {
       logger.error('Failed to get MTN MoMo account balance:', error.response?.data || error.message);
       throw new Error('Failed to get account balance');
+    }
+  }
+
+  /**
+   * Validate payer account before payment
+   */
+  async validateAccount(phoneNumber) {
+    try {
+      const token = await this.getAccessToken();
+      const formattedPhone = this.formatPhoneNumber(phoneNumber);
+
+      const response = await axios.get(
+        `${this.baseURL}/collection/v1_0/accountholder/msisdn/${formattedPhone}/active`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'X-Target-Environment': this.config.environment,
+            'Ocp-Apim-Subscription-Key': this.config.subscriptionKey,
+          },
+          timeout: 10000,
+        }
+      );
+
+      return response.data.result === true;
+    } catch (error) {
+      logger.warn('Failed to validate MTN MoMo account:', error.message);
+      return false; // Don't block payment if validation fails
     }
   }
 }

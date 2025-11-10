@@ -20,7 +20,7 @@ const TermsConditions = () => {
       content: [
         'We strive to provide accurate product descriptions, images, and pricing information.',
         'All products are subject to availability. We reserve the right to limit quantities or discontinue products.',
-        'Prices are listed in Rwandan Francs (RWF) and are subject to change without notice.',
+        'Prices are listed in US Dollars (USD) and are subject to change without notice.',
         'Product images are for illustration purposes and actual products may vary slightly.',
         'We do not guarantee that product descriptions or other content are error-free.',
         'In case of errors, we reserve the right to cancel or refuse orders.'
@@ -44,9 +44,9 @@ const TermsConditions = () => {
       title: 'Shipping & Delivery',
       content: [
         'We offer delivery services throughout Rwanda with varying shipping costs and timeframes.',
-        'Standard Delivery: 5,000 RWF (3-5 business days)',
-        'Express Delivery: 10,000 RWF (1-2 business days)',
-        'Same-Day Delivery: 15,000 RWF (same day within Kigali)',
+        'Standard Delivery: $50 (3-5 business days)',
+        'Express Delivery: $100 (1-2 business days)',
+        'Same-Day Delivery: $150 (same day within Kigali)',
         'Delivery times are estimates and not guaranteed.',
         'We are not responsible for delays caused by weather, traffic, or other unforeseen circumstances.',
         'You must provide accurate delivery information. We are not liable for failed deliveries due to incorrect addresses.',

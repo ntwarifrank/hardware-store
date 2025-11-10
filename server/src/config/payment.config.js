@@ -39,6 +39,15 @@ export const paymentConfig = {
     timeout: 180000, // 3 minutes timeout for payment
     retryAttempts: 3,
     statusCheckInterval: 5000, // Check status every 5 seconds
+    maxRetries: 2, // Maximum retry attempts for failed requests
+    retryDelay: 1000, // Initial retry delay in ms (exponential backoff)
+    tokenRefreshBuffer: 300000, // Refresh token 5 min before expiry
+    requestTimeout: 30000, // 30 second timeout for API requests
+    duplicatePreventionWindow: 60000, // 1 minute window to prevent duplicate payments
+    webhookSecurity: {
+      verifySignature: true, // Verify webhook signatures
+      ipWhitelist: [], // Optional: Whitelist webhook IPs
+    },
   },
 };
 

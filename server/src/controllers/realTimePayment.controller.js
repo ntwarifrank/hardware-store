@@ -25,9 +25,17 @@ export const initiatePayment = asyncHandler(async (req, res) => {
     throw new AppError('Not authorized', 403);
   }
 
-  // Check if order is already paid
+  // Check if order is already paid or being processed
   if (order.paymentInfo.status === 'completed') {
     throw new AppError('Order is already paid', 400);
+  }
+
+  // Prevent duplicate payment initiation
+  if (order.paymentInfo.transactionId && order.paymentInfo.status === 'pending') {
+    const timeSinceLastAttempt = Date.now() - new Date(order.updatedAt).getTime();
+    if (timeSinceLastAttempt < 60000) { // Less than 1 minute
+      throw new AppError('Payment request already in progress. Please wait.', 429);
+    }
   }
 
   const { method, provider, phoneNumber } = order.paymentInfo;
@@ -82,6 +90,7 @@ export const initiatePayment = asyncHandler(async (req, res) => {
         transactionId: paymentResult.transactionId || paymentResult.referenceId,
         status: 'PENDING',
         expiresIn: 180, // 3 minutes
+        expiresAt: paymentResult.expiresAt || (Date.now() + 180000),
       },
     });
   } catch (error) {
@@ -311,13 +320,67 @@ export const processPaymentWithPolling = asyncHandler(async (req, res) => {
  */
 export const mtnCallback = asyncHandler(async (req, res) => {
   const webhookData = req.body;
+  const signature = req.headers['x-mtn-signature'];
 
-  logger.info('MTN MoMo webhook received:', webhookData);
+  logger.info('MTN MoMo webhook received', {
+    referenceId: webhookData.referenceId,
+    status: webhookData.status
+  });
 
-  // Process webhook data and update order
-  // Implementation depends on MTN's webhook structure
+  try {
+    // Verify webhook signature for security
+    if (signature && !mtnMomoService.verifyWebhookSignature(webhookData, signature)) {
+      logger.warn('Invalid MTN webhook signature');
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
 
-  res.status(200).json({ received: true });
+    const { referenceId, status, financialTransactionId, externalId, reason } = webhookData;
+
+    if (!referenceId || !status) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Find order by transaction ID or external ID
+    const order = await Order.findOne({
+      $or: [
+        { 'paymentInfo.transactionId': referenceId },
+        { '_id': externalId }
+      ]
+    });
+
+    if (!order) {
+      logger.warn(`Order not found for MTN webhook: ${referenceId}`);
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Prevent duplicate processing
+    if (order.paymentInfo.status === 'completed') {
+      logger.info(`Payment already completed for order ${order._id}`);
+      return res.status(200).json({ received: true, message: 'Already processed' });
+    }
+
+    // Update order based on payment status
+    if (status === 'SUCCESSFUL') {
+      order.paymentInfo.status = 'completed';
+      order.paymentInfo.paidAt = new Date();
+      order.paymentInfo.transactionId = financialTransactionId || referenceId;
+      order.orderStatus = 'processing';
+      await order.save();
+
+      logger.info(`MTN payment completed via webhook for order ${order._id}`);
+    } else if (status === 'FAILED') {
+      order.paymentInfo.status = 'failed';
+      order.paymentInfo.failureReason = reason;
+      await order.save();
+
+      logger.info(`MTN payment failed via webhook for order ${order._id}: ${reason}`);
+    }
+
+    res.status(200).json({ received: true });
+  } catch (error) {
+    logger.error('Error processing MTN webhook:', error);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
 });
 
 /**
@@ -327,13 +390,65 @@ export const mtnCallback = asyncHandler(async (req, res) => {
  */
 export const airtelCallback = asyncHandler(async (req, res) => {
   const webhookData = req.body;
+  const signature = req.headers['x-airtel-signature'];
 
-  logger.info('Airtel Money webhook received:', webhookData);
+  logger.info('Airtel Money webhook received', {
+    transactionId: webhookData?.transaction?.id,
+    status: webhookData?.transaction?.status
+  });
 
-  // Process webhook data and update order
-  // Implementation depends on Airtel's webhook structure
+  try {
+    // Verify webhook signature for security
+    if (signature && !airtelMoneyService.verifyWebhookSignature(webhookData, signature)) {
+      logger.warn('Invalid Airtel webhook signature');
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
 
-  res.status(200).json({ received: true });
+    const { transaction } = webhookData;
+
+    if (!transaction || !transaction.id) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Find order by transaction ID
+    const order = await Order.findOne({
+      'paymentInfo.transactionId': transaction.id
+    });
+
+    if (!order) {
+      logger.warn(`Order not found for Airtel webhook: ${transaction.id}`);
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Prevent duplicate processing
+    if (order.paymentInfo.status === 'completed') {
+      logger.info(`Payment already completed for order ${order._id}`);
+      return res.status(200).json({ received: true, message: 'Already processed' });
+    }
+
+    // Update order based on payment status
+    // TS = Transaction Successful, TF = Transaction Failed
+    if (transaction.status === 'TS') {
+      order.paymentInfo.status = 'completed';
+      order.paymentInfo.paidAt = new Date();
+      order.paymentInfo.transactionId = transaction.airtel_money_id || transaction.id;
+      order.orderStatus = 'processing';
+      await order.save();
+
+      logger.info(`Airtel payment completed via webhook for order ${order._id}`);
+    } else if (transaction.status === 'TF') {
+      order.paymentInfo.status = 'failed';
+      order.paymentInfo.failureReason = transaction.message || 'Payment failed';
+      await order.save();
+
+      logger.info(`Airtel payment failed via webhook for order ${order._id}`);
+    }
+
+    res.status(200).json({ received: true });
+  } catch (error) {
+    logger.error('Error processing Airtel webhook:', error);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
 });
 
 /**

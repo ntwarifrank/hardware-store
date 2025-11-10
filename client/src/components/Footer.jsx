@@ -241,10 +241,11 @@ const Footer = () => {
             <h4 className="text-white font-medium mb-3 text-sm">Follow Us</h4>
             <div className="flex gap-3">
               <a
-                href="https://facebook.com"
+                href="https://www.facebook.com/profile.php?id=61575056581518"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 bg-gray-800 hover:bg-primary-600 rounded-lg flex items-center justify-center transition-colors"
+                aria-label="Visit our Facebook page"
               >
                 <Facebook size={18} />
               </a>
@@ -253,20 +254,23 @@ const Footer = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 bg-gray-800 hover:bg-primary-600 rounded-lg flex items-center justify-center transition-colors"
+                aria-label="Visit our Twitter page"
               >
                 <Twitter size={18} />
               </a>
               <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/gost_5000?igsh=Z3EyZ3ZybG1hMmU3"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 bg-gray-800 hover:bg-primary-600 rounded-lg flex items-center justify-center transition-colors"
+                aria-label="Visit our Instagram page"
               >
                 <Instagram size={18} />
               </a>
               <a
                 href="mailto:ugwanezav@gmail.com"
                 className="w-10 h-10 bg-gray-800 hover:bg-primary-600 rounded-lg flex items-center justify-center transition-colors"
+                aria-label="Send us an email"
               >
                 <Mail size={18} />
               </a>

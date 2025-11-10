@@ -6,13 +6,13 @@ const ShippingDelivery = () => {
     {
       icon: Truck,
       name: 'Standard Delivery',
-      price: '5,000 RWF',
+      price: '$50',
       duration: '3-5 Business Days',
       description: 'Reliable delivery across Rwanda',
       features: [
         'Tracking available',
         'Signature required',
-        'Free for orders over 200,000 RWF',
+        'Free for orders over $2,000',
         'Available nationwide'
       ],
       color: 'blue'
@@ -20,7 +20,7 @@ const ShippingDelivery = () => {
     {
       icon: Clock,
       name: 'Express Delivery',
-      price: '10,000 RWF',
+      price: '$100',
       duration: '1-2 Business Days',
       description: 'Fast delivery for urgent orders',
       features: [
@@ -34,7 +34,7 @@ const ShippingDelivery = () => {
     {
       icon: Package,
       name: 'Same-Day Delivery',
-      price: '15,000 RWF',
+      price: '$150',
       duration: 'Same Day',
       description: 'Ultra-fast delivery within Kigali',
       features: [
@@ -179,7 +179,7 @@ const ShippingDelivery = () => {
             Free Standard Delivery
           </h3>
           <p className="text-lg text-green-100">
-            On all orders over <span className="font-bold">200,000 RWF</span>
+            On all orders over <span className="font-bold">$2,000</span>
           </p>
         </div>
 

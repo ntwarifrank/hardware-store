@@ -110,7 +110,7 @@ const Products = () => {
 
       {/* Products Count */}
       <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
-        Showing {productsData?.products?.length || 0} of {productsData?.total || 0} products
+        Showing {productsData?.products?.length || 0} of {productsData?.pagination?.total || 0} products
       </p>
 
       {/* Products Grid */}
@@ -205,7 +205,7 @@ const Products = () => {
       )}
 
       {/* Load More */}
-      {productsData?.hasMore && (
+      {currentPage < (productsData?.pagination?.pages || 0) && (
         <div className="flex justify-center mt-8">
           <button
             onClick={() => setCurrentPage(prev => prev + 1)}

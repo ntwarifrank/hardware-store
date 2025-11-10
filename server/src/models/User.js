@@ -89,6 +89,47 @@ const userSchema = new mongoose.Schema(
     twoFactorCode: String,
     twoFactorExpire: Date,
     tempUserId: String, // For pending registrations
+    // Terms & Conditions
+    acceptedTerms: {
+      type: Boolean,
+      default: false,
+    },
+    termsAcceptedAt: Date,
+    termsVersion: {
+      type: String,
+      default: '1.0',
+    },
+    // Security & Login tracking
+    lastLogin: Date,
+    lastLoginIP: String,
+    refreshTokenIssuedAt: Date,
+    lastLogout: Date,
+    lastLogoutIP: String,
+    loginHistory: [{
+      ip: String,
+      userAgent: String,
+      timestamp: Date,
+      success: Boolean,
+    }],
+    // Notification Preferences
+    notificationPreferences: {
+      emailNotifications: {
+        type: Boolean,
+        default: true,
+      },
+      orderUpdates: {
+        type: Boolean,
+        default: true,
+      },
+      promotions: {
+        type: Boolean,
+        default: false,
+      },
+      newsletter: {
+        type: Boolean,
+        default: false,
+      },
+    },
   },
   {
     timestamps: true,

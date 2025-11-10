@@ -7,6 +7,7 @@ import { sendWelcomeEmail, sendPasswordResetEmail, sendOTPEmail } from '../utils
 import { generateOTP, generateTempUserId, hashOTP, verifyOTP, getOTPExpiry } from '../utils/otpUtils.js';
 // import { recordFailedAttempt, recordSuccessAttempt, isCaptchaRequired } from '../utils/suspiciousActivityTracker.js';
 import logger from '../utils/logger.js';
+import { AUTH_MESSAGES, validatePasswordStrength, validateEmail } from '../utils/authMessages.js';
 
 /**
  * @desc    Register new user - Step 1: Send OTP
@@ -14,12 +15,36 @@ import logger from '../utils/logger.js';
  * @access  Public
  */
 export const register = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, acceptedTerms } = req.body;
+
+  // Validate input
+  if (!email || !password || !name) {
+    throw new AppError(AUTH_MESSAGES.VALIDATION.MISSING_FIELDS, 400);
+  }
+
+  if (!validateEmail(email)) {
+    throw new AppError(AUTH_MESSAGES.REGISTER.INVALID_EMAIL, 400);
+  }
+
+  if (name.trim().length < 2) {
+    throw new AppError(AUTH_MESSAGES.REGISTER.INVALID_NAME, 400);
+  }
+
+  // Validate password strength
+  const passwordValidation = validatePasswordStrength(password);
+  if (!passwordValidation.valid) {
+    throw new AppError(passwordValidation.message, 400);
+  }
+
+  // Validate terms acceptance (optional but recommended)
+  if (acceptedTerms !== undefined && !acceptedTerms) {
+    throw new AppError('You must accept the terms and conditions to register', 400);
+  }
 
   // Check if user already exists
   const userExists = await User.findOne({ email });
   if (userExists) {
-    throw new AppError('User already exists with this email', 400);
+    throw new AppError(AUTH_MESSAGES.REGISTER.EMAIL_EXISTS, 409);
   }
 
   // Generate OTP
@@ -36,6 +61,9 @@ export const register = asyncHandler(async (req, res) => {
     twoFactorCode: hashedOTP,
     twoFactorExpire: getOTPExpiry(),
     tempUserId,
+    acceptedTerms: acceptedTerms || false,
+    termsAcceptedAt: acceptedTerms ? new Date() : undefined,
+    termsVersion: '1.0',
   });
 
   // Send OTP email (don't wait for it)
@@ -45,7 +73,7 @@ export const register = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Verification code sent to your email',
+    message: AUTH_MESSAGES.REGISTER.SUCCESS,
     data: {
       tempUserId,
       email: user.email,
@@ -68,13 +96,13 @@ export const verifyOTPCode = asyncHandler(async (req, res) => {
   });
 
   if (!user) {
-    throw new AppError('Invalid or expired verification code', 400);
+    throw new AppError(AUTH_MESSAGES.OTP.EXPIRED, 400);
   }
 
   // Verify OTP
   const isOTPValid = verifyOTP(otp, user.twoFactorCode);
   if (!isOTPValid) {
-    throw new AppError('Invalid verification code', 400);
+    throw new AppError(AUTH_MESSAGES.OTP.INVALID, 400);
   }
 
   // Update user - mark as verified
@@ -106,7 +134,7 @@ export const verifyOTPCode = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    message: 'Email verified successfully',
+    message: AUTH_MESSAGES.OTP.VERIFIED,
     data: {
       user: {
         _id: user._id,
@@ -132,7 +160,7 @@ export const resendOTP = asyncHandler(async (req, res) => {
   const user = await User.findOne({ tempUserId });
 
   if (!user) {
-    throw new AppError('Invalid request', 400);
+    throw new AppError(AUTH_MESSAGES.OTP.NOT_FOUND, 400);
   }
 
   // Generate new OTP
@@ -151,7 +179,7 @@ export const resendOTP = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    message: 'New verification code sent to your email',
+    message: AUTH_MESSAGES.OTP.RESENT,
   });
 });
 
@@ -165,24 +193,35 @@ export const login = asyncHandler(async (req, res) => {
   const ip = req.ip || req.connection.remoteAddress;
   const userAgent = req.get('user-agent') || 'Unknown';
 
+  // Validate input
+  if (!email || !password) {
+    throw new AppError(AUTH_MESSAGES.VALIDATION.MISSING_FIELDS, 400);
+  }
+
   // Check if user exists
   const user = await User.findOne({ email }).select('+password');
   if (!user) {
     logger.warn(`Failed login attempt for non-existent user: ${email} from IP: ${ip}`);
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError(AUTH_MESSAGES.LOGIN.USER_NOT_FOUND, 401);
   }
 
   // Check if user is blocked
   if (user.isBlocked) {
     logger.warn(`Blocked user attempted login: ${email} from IP: ${ip}`);
-    throw new AppError('Your account has been blocked. Please contact support.', 403);
+    throw new AppError(AUTH_MESSAGES.LOGIN.ACCOUNT_BLOCKED, 403);
+  }
+
+  // Check if email is verified
+  if (!user.isEmailVerified) {
+    logger.warn(`Unverified user attempted login: ${email} from IP: ${ip}`);
+    throw new AppError(AUTH_MESSAGES.LOGIN.EMAIL_NOT_VERIFIED, 403);
   }
 
   // Check password
   const isPasswordMatch = await user.comparePassword(password);
   if (!isPasswordMatch) {
     logger.warn(`Failed login attempt for ${email} from IP: ${ip}`);
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError(AUTH_MESSAGES.LOGIN.WRONG_PASSWORD, 401);
   }
 
   // Security: Update last login info
@@ -220,7 +259,7 @@ export const login = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    message: 'Login successful',
+    message: AUTH_MESSAGES.LOGIN.SUCCESS,
     data: {
       user: {
         _id: user._id,
@@ -264,7 +303,7 @@ export const logout = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Logout successful - All sessions cleared',
+      message: AUTH_MESSAGES.LOGOUT.SUCCESS,
       data: {
         loggedOut: true,
         timestamp: new Date().toISOString()
@@ -285,7 +324,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
   const { refreshToken } = req.cookies;
 
   if (!refreshToken) {
-    throw new AppError('Refresh token not found', 401);
+    throw new AppError(AUTH_MESSAGES.TOKEN.MISSING, 401);
   }
 
   // Verify refresh token
@@ -294,7 +333,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
   // Get user
   const user = await User.findById(decoded.userId);
   if (!user || user.refreshToken !== refreshToken) {
-    throw new AppError('Invalid refresh token', 401);
+    throw new AppError(AUTH_MESSAGES.TOKEN.REFRESH_INVALID, 401);
   }
 
   // Generate new access token with role-based expiration
@@ -346,7 +385,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ email });
   if (!user) {
-    throw new AppError('No user found with this email', 404);
+    throw new AppError(AUTH_MESSAGES.PASSWORD_RESET.USER_NOT_FOUND, 404);
   }
 
   // Generate reset token
@@ -363,14 +402,14 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Password reset email sent',
+      message: AUTH_MESSAGES.PASSWORD_RESET.EMAIL_SENT,
     });
   } catch (error) {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
 
-    throw new AppError('Email could not be sent', 500);
+    throw new AppError('Failed to send password reset email. Please try again later.', 500);
   }
 });
 
@@ -392,7 +431,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
   });
 
   if (!user) {
-    throw new AppError('Invalid or expired reset token', 400);
+    throw new AppError(AUTH_MESSAGES.PASSWORD_RESET.INVALID_TOKEN, 400);
   }
 
   // Set new password
@@ -403,7 +442,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    message: 'Password reset successful',
+    message: AUTH_MESSAGES.PASSWORD_RESET.SUCCESS,
   });
 });
 
@@ -420,7 +459,13 @@ export const changePassword = asyncHandler(async (req, res) => {
   // Check current password
   const isPasswordMatch = await user.comparePassword(currentPassword);
   if (!isPasswordMatch) {
-    throw new AppError('Current password is incorrect', 401);
+    throw new AppError(AUTH_MESSAGES.PASSWORD_CHANGE.WRONG_CURRENT, 401);
+  }
+
+  // Validate new password strength
+  const passwordValidation = validatePasswordStrength(newPassword);
+  if (!passwordValidation.valid) {
+    throw new AppError(passwordValidation.message, 400);
   }
 
   // Set new password
@@ -429,6 +474,6 @@ export const changePassword = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    message: 'Password changed successfully',
+    message: AUTH_MESSAGES.PASSWORD_CHANGE.SUCCESS,
   });
 });

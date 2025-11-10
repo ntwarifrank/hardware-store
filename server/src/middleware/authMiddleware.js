@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import asyncHandler from '../utils/handleAsync.js';
 import { AppError } from './errorMiddleware.js';
 import User from '../models/User.js';
+import { AUTH_MESSAGES } from '../utils/authMessages.js';
 
 /**
  * Protect routes - verify JWT token
@@ -20,7 +21,7 @@ export const protect = asyncHandler(async (req, res, next) => {
 
   // Check if token exists
   if (!token) {
-    throw new AppError('Not authorized to access this route', 401);
+    throw new AppError(AUTH_MESSAGES.TOKEN.MISSING, 401);
   }
 
   try {
@@ -31,17 +32,23 @@ export const protect = asyncHandler(async (req, res, next) => {
     req.user = await User.findById(decoded.userId).select('-password');
 
     if (!req.user) {
-      throw new AppError('User not found', 404);
+      throw new AppError(AUTH_MESSAGES.TOKEN.INVALID, 401);
     }
 
     // Check if user is blocked
     if (req.user.isBlocked) {
-      throw new AppError('Your account has been blocked. Please contact support.', 403);
+      throw new AppError(AUTH_MESSAGES.ACCOUNT.BLOCKED, 403);
     }
 
     next();
   } catch (error) {
-    throw new AppError('Not authorized to access this route', 401);
+    // Handle JWT-specific errors
+    if (error.name === 'TokenExpiredError') {
+      throw new AppError(AUTH_MESSAGES.TOKEN.EXPIRED, 401);
+    } else if (error.name === 'JsonWebTokenError') {
+      throw new AppError(AUTH_MESSAGES.TOKEN.INVALID, 401);
+    }
+    throw new AppError(AUTH_MESSAGES.TOKEN.INVALID, 401);
   }
 });
 
@@ -53,7 +60,7 @@ export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
       throw new AppError(
-        `User role '${req.user.role}' is not authorized to access this route`,
+        AUTH_MESSAGES.AUTHORIZATION.NOT_AUTHORIZED,
         403
       );
     }
@@ -66,11 +73,11 @@ export const authorize = (...roles) => {
  */
 export const isAdmin = asyncHandler(async (req, res, next) => {
   if (!req.user) {
-    throw new AppError('Not authorized - Please login first', 401);
+    throw new AppError(AUTH_MESSAGES.TOKEN.MISSING, 401);
   }
 
   if (req.user.role !== 'admin') {
-    throw new AppError('Access denied - Admin privileges required', 403);
+    throw new AppError(AUTH_MESSAGES.AUTHORIZATION.ADMIN_ONLY, 403);
   }
 
   next();

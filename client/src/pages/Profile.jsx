@@ -2,7 +2,6 @@ import { useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../features/auth/authSlice';
-import ReCAPTCHA from 'react-google-recaptcha';
 import { 
   User, 
   Mail, 
@@ -29,13 +28,11 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const fileInputRef = useRef(null);
-  const recaptchaRef = useRef(null);
   
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState(user?.avatar?.url || null);
-  const [captchaToken, setCaptchaToken] = useState(null);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -516,66 +513,8 @@ const Profile = () => {
                             </ul>
                           </div>
 
-                          {/* reCAPTCHA v2 Security Verification */}
-                          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border border-gray-300 dark:border-gray-600">
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-2">
-                              <Shield size={16} />
-                              🔒 Security verification required
-                            </p>
-                            
-                            {import.meta.env.VITE_RECAPTCHA_SITE_KEY ? (
-                              <div className="flex flex-col items-center gap-2">
-                                <ReCAPTCHA
-                                  ref={recaptchaRef}
-                                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                                  onChange={(token) => {
-                                    setCaptchaToken(token);
-                                    console.log('✅ reCAPTCHA verified');
-                                  }}
-                                  onExpired={() => {
-                                    setCaptchaToken(null);
-                                    console.warn('⏰ reCAPTCHA expired');
-                                  }}
-                                  onErrored={() => {
-                                    setCaptchaToken(null);
-                                    console.error('❌ reCAPTCHA error');
-                                  }}
-                                  theme="light"
-                                />
-                                <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                                  ⚠️ If you see "localhost not supported" error:
-                                  <br />
-                                  Add <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">localhost</code> to your reCAPTCHA domains at{' '}
-                                  <a 
-                                    href="https://www.google.com/recaptcha/admin" 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-primary-600 hover:underline"
-                                  >
-                                    Google reCAPTCHA Admin
-                                  </a>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded p-3 text-center">
-                                <p className="text-sm text-yellow-800 dark:text-yellow-300">
-                                  ⚠️ reCAPTCHA not configured
-                                </p>
-                                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                                  Set VITE_RECAPTCHA_SITE_KEY in .env file
-                                </p>
-                              </div>
-                            )}
-                          </div>
-
                           <button 
                             onClick={() => {
-                              // Check reCAPTCHA first
-                              if (!captchaToken) {
-                                alert('🔒 Please complete the reCAPTCHA security verification first');
-                                return;
-                              }
-
                               const confirmed = window.confirm(
                                 '⚠️ FINAL WARNING\n\n' +
                                 'Are you absolutely sure you want to delete your account?\n\n' +
@@ -589,42 +528,20 @@ const Profile = () => {
                               if (confirmed) {
                                 const confirmText = prompt('Type "DELETE" to confirm account deletion:');
                                 if (confirmText === 'DELETE') {
-                                  // TODO: Add API call to delete account with captcha token
-                                  console.log('✅ Account deletion confirmed with captcha:', captchaToken);
+                                  // TODO: Add API call to delete account
+                                  console.log('✅ Account deletion confirmed');
                                   alert('✅ Account deletion request verified!\n\nBackend API will be implemented to process deletion.');
                                   
-                                  // Reset captcha after use
-                                  if (recaptchaRef.current) {
-                                    recaptchaRef.current.reset();
-                                  }
-                                  setCaptchaToken(null);
-                                  
-                                  // dispatch(deleteAccount({ captchaToken }))
+                                  // dispatch(deleteAccount())
                                 } else {
                                   alert('❌ Account deletion cancelled - confirmation text did not match');
-                                  // Reset captcha
-                                  if (recaptchaRef.current) {
-                                    recaptchaRef.current.reset();
-                                  }
-                                  setCaptchaToken(null);
                                 }
-                              } else {
-                                // Reset captcha if user cancelled
-                                if (recaptchaRef.current) {
-                                  recaptchaRef.current.reset();
-                                }
-                                setCaptchaToken(null);
                               }
                             }}
-                            disabled={!captchaToken}
-                            className={`w-full px-6 py-3 rounded-lg transition-colors font-semibold flex items-center justify-center gap-2 ${
-                              captchaToken 
-                                ? 'bg-red-600 text-white hover:bg-red-700 cursor-pointer' 
-                                : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                            }`}
+                            className="w-full px-6 py-3 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors font-semibold flex items-center justify-center gap-2 cursor-pointer"
                           >
                             <X size={20} />
-                            {captchaToken ? 'Delete My Account Permanently' : '🔒 Complete Security Check First'}
+                            Delete My Account Permanently
                           </button>
                         </div>
                       </div>

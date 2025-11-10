@@ -1,6 +1,7 @@
 import axios from 'axios';
 import paymentConfig from '../config/payment.config.js';
 import logger from '../utils/logger.js';
+import crypto from 'crypto';
 
 /**
  * Airtel Money Payment Service
@@ -15,12 +16,12 @@ class AirtelMoneyService {
   }
 
   /**
-   * Get access token for Airtel Money API
+   * Get access token for Airtel Money API with retry logic
    */
-  async getAccessToken() {
+  async getAccessToken(retryCount = 0) {
     try {
-      // Check if token is still valid
-      if (this.token && this.tokenExpiry && Date.now() < this.tokenExpiry) {
+      // Check if token is still valid (with 5 min buffer)
+      if (this.token && this.tokenExpiry && Date.now() < (this.tokenExpiry - 300000)) {
         return this.token;
       }
 
@@ -35,28 +36,59 @@ class AirtelMoneyService {
           headers: {
             'Content-Type': 'application/json',
           },
+          timeout: 30000, // 30 second timeout
         }
       );
 
       this.token = response.data.access_token;
       this.tokenExpiry = Date.now() + (response.data.expires_in * 1000);
 
-      logger.info('Airtel Money access token obtained');
+      logger.info('Airtel Money access token obtained successfully');
       return this.token;
     } catch (error) {
-      logger.error('Failed to get Airtel Money access token:', error.response?.data || error.message);
-      throw new Error('Failed to authenticate with Airtel Money');
+      logger.error('Failed to get Airtel Money access token:', {
+        error: error.response?.data || error.message,
+        attempt: retryCount + 1
+      });
+      
+      // Retry up to 3 times with exponential backoff
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000;
+        logger.info(`Retrying token request in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.getAccessToken(retryCount + 1);
+      }
+      
+      throw new Error('Failed to authenticate with Airtel Money after multiple attempts');
     }
   }
 
   /**
-   * Request payment from customer
+   * Validate phone number format
+   */
+  validatePhoneNumber(phone) {
+    const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+    const rwandaPattern = /^(\+?250|0)?7[238]\d{7}$/;
+    return rwandaPattern.test(cleaned);
+  }
+
+  /**
+   * Request payment from customer with validation and retry
    * @param {Object} paymentData - Payment request data
    * @returns {Promise<Object>} Payment response
    */
-  async requestPayment(paymentData) {
+  async requestPayment(paymentData, retryCount = 0) {
     try {
       const { amount, phoneNumber, orderId, customerName } = paymentData;
+
+      // Validate inputs
+      if (!amount || amount <= 0) {
+        throw new Error('Invalid payment amount');
+      }
+
+      if (!this.validatePhoneNumber(phoneNumber)) {
+        throw new Error('Invalid Rwanda phone number format. Use format: 078XXXXXXX or 073XXXXXXX or 072XXXXXXX');
+      }
 
       // Format phone number
       const formattedPhone = this.formatPhoneNumber(phoneNumber);
@@ -82,7 +114,8 @@ class AirtelMoneyService {
       logger.info(`Requesting Airtel Money payment: ${transactionId}`, {
         orderId,
         amount,
-        phone: formattedPhone,
+        phone: this.maskPhoneNumber(formattedPhone),
+        attempt: retryCount + 1
       });
 
       const response = await axios.post(
@@ -95,27 +128,50 @@ class AirtelMoneyService {
             'X-Country': 'RW',
             'X-Currency': this.config.currency,
           },
+          timeout: 30000,
         }
       );
 
       const { status, data } = response.data;
 
-      logger.info(`Airtel Money payment request sent: ${transactionId}`);
+      logger.info(`Airtel Money payment request sent successfully: ${transactionId}`);
 
       return {
         success: status.success,
         transactionId: data?.transaction?.id || transactionId,
         airtelMoneyId: data?.transaction?.airtel_money_id,
         status: status.success ? 'PENDING' : 'FAILED',
-        message: status.message || 'Payment request sent to customer phone',
+        message: status.message || 'Payment request sent to customer phone. Please check your phone and authorize the payment.',
+        expiresAt: Date.now() + 180000, // 3 minutes
       };
     } catch (error) {
-      logger.error('Airtel Money payment request failed:', error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || error.message;
+      logger.error('Airtel Money payment request failed:', {
+        error: errorMessage,
+        orderId: paymentData.orderId,
+        attempt: retryCount + 1,
+        statusCode: error.response?.status
+      });
+      
+      // Retry on network errors or 5xx errors
+      const shouldRetry = (
+        (!error.response || error.response.status >= 500) && 
+        retryCount < 2 &&
+        !error.message.includes('Invalid')
+      );
+      
+      if (shouldRetry) {
+        const delay = Math.pow(2, retryCount) * 1000;
+        logger.info(`Retrying payment request in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.requestPayment(paymentData, retryCount + 1);
+      }
       
       return {
         success: false,
-        error: error.response?.data?.message || 'Payment request failed',
+        error: errorMessage,
         status: 'FAILED',
+        errorCode: error.response?.status
       };
     }
   }
@@ -218,6 +274,14 @@ class AirtelMoneyService {
   }
 
   /**
+   * Mask phone number for logging (security)
+   */
+  maskPhoneNumber(phone) {
+    if (!phone || phone.length < 8) return '***';
+    return phone.substring(0, 6) + 'XXX' + phone.substring(phone.length - 2);
+  }
+
+  /**
    * Format phone number to Airtel Money format
    * @param {string} phone - Phone number
    * @returns {string} Formatted phone number
@@ -244,11 +308,22 @@ class AirtelMoneyService {
   }
 
   /**
+   * Verify payment signature (webhook security)
+   */
+  verifyWebhookSignature(payload, signature) {
+    const hash = crypto
+      .createHmac('sha256', this.config.clientSecret)
+      .update(JSON.stringify(payload))
+      .digest('hex');
+    return hash === signature;
+  }
+
+  /**
    * Refund payment (if supported)
    * @param {string} transactionId - Original transaction ID
    * @param {number} amount - Amount to refund
    */
-  async refundPayment(transactionId, amount) {
+  async refundPayment(transactionId, amount, retryCount = 0) {
     try {
       const token = await this.getAccessToken();
       const refundId = `REFUND-${Date.now()}-${transactionId}`;
@@ -277,10 +352,11 @@ class AirtelMoneyService {
             'X-Country': 'RW',
             'X-Currency': this.config.currency,
           },
+          timeout: 30000,
         }
       );
 
-      logger.info(`Airtel Money refund initiated: ${refundId}`);
+      logger.info(`Airtel Money refund initiated successfully: ${refundId}`);
 
       return {
         success: response.data.status.success,
@@ -288,8 +364,49 @@ class AirtelMoneyService {
         message: response.data.status.message,
       };
     } catch (error) {
-      logger.error('Airtel Money refund failed:', error.response?.data || error.message);
-      throw new Error('Refund failed');
+      logger.error('Airtel Money refund failed:', {
+        error: error.response?.data || error.message,
+        attempt: retryCount + 1
+      });
+      
+      // Retry on network errors
+      if ((!error.response || error.response.status >= 500) && retryCount < 2) {
+        const delay = Math.pow(2, retryCount) * 1000;
+        logger.info(`Retrying refund in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.refundPayment(transactionId, amount, retryCount + 1);
+      }
+      
+      throw new Error('Refund failed after multiple attempts');
+    }
+  }
+
+  /**
+   * Validate payer account before payment
+   */
+  async validateAccount(phoneNumber) {
+    try {
+      const token = await this.getAccessToken();
+      const formattedPhone = this.formatPhoneNumber(phoneNumber);
+
+      // Airtel's KYC check endpoint
+      const response = await axios.get(
+        `${this.baseURL}/standard/v1/users/${formattedPhone}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'X-Country': 'RW',
+            'X-Currency': this.config.currency,
+          },
+          timeout: 10000,
+        }
+      );
+
+      return response.data.status.success === true;
+    } catch (error) {
+      logger.warn('Failed to validate Airtel Money account:', error.message);
+      return false; // Don't block payment if validation fails
     }
   }
 }
